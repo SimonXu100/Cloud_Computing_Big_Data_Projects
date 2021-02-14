@@ -1,0 +1,23 @@
+body {
+	background-image: url("../img/background.jpg"); 
+	background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    height: 100vh;
+    padding: 150px 0;
+}
+
+.submit-form {
+	width: 50%;
+    height: 350px;
+    max-width: 600px;
+    background: #ffffff6b;
+    padding: 50px !important;;
+    text-align: center;
+    margin: auto;
+    border-radius: 5px;
+}
+
+.form-group {
+	margin: 50px 0 !important;
+}

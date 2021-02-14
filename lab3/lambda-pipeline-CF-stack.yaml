@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: CD Demo Lambda
+Resources:
+  hw3album:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: hw3album
+  LF1hw3:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: LF1_HW3
+      Handler: HW3_LF1.lambda_handler
+      Runtime: python3.7
+      CodeUri: s3://hw3-lambda-func/8e059e532b848def5a2562cc6d1efb8c
+      Description: Lambda function for CD Demo
+      MemorySize: 128
+      Timeout: 30
+      Role: arn:aws:iam::596817940943:role/service-role/hw3-LF1-role-bcwncax1
+      Layers:
+      - arn:aws:lambda:us-east-1:596817940943:layer:Elasticsearch:2
+      - arn:aws:lambda:us-east-1:596817940943:layer:requests-aws4auth:4
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket:
+              Ref: hw3album
+            Events: s3:ObjectCreated:Put
+      Environment:
+        Variables:
+          REGION: us-east-1
+      VpcConfig:
+        SecurityGroupIds:
+        - sg-7bcadf52
+        SubnetIds:
+        - subnet-f04d53ac
+  LF2hw3:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: LF2_HW3
+      Handler: HW3_LF2.lambda_handler
+      Runtime: python3.7
+      CodeUri: s3://hw3-lambda-func/8e059e532b848def5a2562cc6d1efb8c
+      Description: Lambda function for CD Demo
+      MemorySize: 128
+      Timeout: 30
+      Role: arn:aws:iam::596817940943:role/service-role/HW3_LF2-role-nngd6vwx
+      Layers:
+      - arn:aws:lambda:us-east-1:596817940943:layer:Elasticsearch:2
+      - arn:aws:lambda:us-east-1:596817940943:layer:requests-aws4auth:4
+      - arn:aws:lambda:us-east-1:596817940943:layer:requests:3
+      Events:
+        getAZsAPI:
+          Type: Api
+          Properties:
+            Path: /search
+            Method: get
+      Environment:
+        Variables:
+          REGION: us-east-1
+      VpcConfig:
+        SecurityGroupIds:
+        - sg-7bcadf52
+        SubnetIds:
+        - subnet-f04d53ac

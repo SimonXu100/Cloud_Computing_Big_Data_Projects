@@ -1,0 +1,263 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  GitHubRepo:
+    Type: String
+    Default: 'Cloud_HW3'
+
+  GitHubBranch:
+    Type: String
+    Default: 'master'
+
+  GitHubToken:
+    Type: String
+    Default: '##############'
+
+  GitHubUser:
+    Type: String
+    Default: 'ShusenXu'
+
+  GitHubRepoLambda:
+    Type: String
+    Default: 'cloud-hw3-lambda'
+
+  GitHubBranchLambda:
+    Type: String
+    Default: 'master'
+
+  GitHubTokenLambda:
+    Type: String
+    Default: '#############'
+
+  GitHubUserLambda:
+    Type: String
+    Default: 'MrZhihao'
+
+Resources:
+  RootRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - cloudformation.amazonaws.com
+              - codepipeline.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: '*'
+                Resource: '*'
+
+  APIGateway:
+    Type: 'AWS::ApiGateway::RestApi'
+    Properties: 
+      BodyS3Location: 
+          Bucket: 'hw3-swagger'
+          Key: 'swagger.yaml'
+      EndpointConfiguration: 
+          Types: 
+            - 'REGIONAL'
+      Name: 'AI Photo Search test'
+
+
+  ES:
+    Type: 'AWS::Elasticsearch::Domain'
+    Properties: 
+      AccessPolicies:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              AWS: "*"
+            Action: "es:*"
+            Resource: "arn:aws:es:us-east-1:596817940943:domain/photos-test/*"
+      DomainName: "photos-test2"
+      ElasticsearchClusterConfig:
+        DedicatedMasterEnabled: "false"
+        InstanceCount: "1"
+        ZoneAwarenessEnabled: "false"
+        InstanceType: "t2.small.elasticsearch"
+      EBSOptions:
+        EBSEnabled: true
+        Iops: 0
+        VolumeSize: 10
+        VolumeType: "gp2"
+      ElasticsearchVersion: "7.1"
+      
+      VPCOptions: 
+        SecurityGroupIds:
+          - sg-7bcadf52
+        SubnetIds:
+          - subnet-f04d53ac
+
+  PipelineLambdaFunc:
+    Type: 'AWS::CodePipeline::Pipeline'
+    Properties:
+        RoleArn: !GetAtt RootRole.Arn #"arn:aws:iam::596817940943:role/service-role/AWSCodePipelineServiceRole-us-east-1-lambda_func"
+        ArtifactStore:
+          Type: S3
+          Location: !Ref ArtifactS3
+        Stages:
+          - Name: Source
+            Actions:
+            - Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Provider: GitHub
+                Version: '1'
+              RunOrder: 1
+              Configuration:
+                Branch: !Ref GitHubBranchLambda
+                OAuthToken: !Ref GitHubTokenLambda
+                Owner: !Ref GitHubUserLambda
+                PollForSourceChanges: 'false'
+                Repo: !Ref GitHubRepoLambda
+              OutputArtifacts:
+                - Name: SourceArtifact
+              InputArtifacts: []
+              Region: "us-east-1"
+              Namespace: SourceVariables
+          - Name: Build
+            Actions:
+            - Name: Build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              RunOrder: 1
+              Configuration:
+                ProjectName: "hw3-lambda-pipeline-build"
+              OutputArtifacts:
+              - Name: BuildArtifact
+              InputArtifacts:
+              - Name: SourceArtifact
+              Region: "us-east-1"
+              Namespace: BuildVariables
+          - Name: Deploy
+            Actions:
+            - Name: Deploy
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: '1'
+              RunOrder: 1
+              Configuration:
+                ActionMode: CHANGE_SET_REPLACE
+                Capabilities: CAPABILITY_IAM,CAPABILITY_AUTO_EXPAND
+                ChangeSetName: "lambda-pipeline-CF-changeset"
+                RoleArn: !GetAtt RootRole.Arn #"arn:aws:iam::596817940943:role/cfn-lambda-pipeline"
+                StackName: "lambda-pipeline-CF-stack"
+                TemplatePath: BuildArtifact::outputsamtemplate.yml
+              OutputArtifacts: []
+              InputArtifacts:
+              - Name: BuildArtifact
+              Region: us-east-1
+              Namespace: DeployVariables
+          - Name: Execute
+            Actions:
+            - Name: Execute
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: '1'
+              RunOrder: 1
+              Configuration:
+                ActionMode: CHANGE_SET_EXECUTE
+                ChangeSetName: "lambda-pipeline-CF-changeset"
+                StackName: "lambda-pipeline-CF-stack"
+              OutputArtifacts: []
+              InputArtifacts:
+                - Name: BuildArtifact
+              Region: "us-east-1"
+
+  # PipeLineWebhookLambda:
+  #   Type: 'AWS::CodePipeline::Webhook'
+  #   Properties: 
+  #     Authentication: GITHUB_HMAC
+  #     AuthenticationConfiguration: 
+  #       SecretToken: !Ref GitHubTokenLambda
+  #     Filters: 
+  #       - JsonPath: '$.ref'
+  #         MatchEquals: 'refs/heads/{Branch}'
+  #     Name: PipeLineWebhookLambdaFunc
+  #     RegisterWithThirdParty: True
+  #     TargetAction: Source
+  #     TargetPipeline: !Ref PipelineLambdaFunc
+  #     TargetPipelineVersion: !GetAtt PipelineLambdaFunc.Version
+
+
+
+  PipelineS3:
+    Type: 'AWS::CodePipeline::Pipeline'
+    Properties:
+      RoleArn: !GetAtt RootRole.Arn #'arn:aws:iam::596817940943:role/service-role/AWSCodePipelineServiceRole-us-east-1-P2FrontEndPipelineNew'
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactS3
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Version: 1
+                Provider: GitHub
+              Configuration:
+                Owner: !Ref GitHubUser
+                Repo: !Ref GitHubRepo
+                Branch: !Ref GitHubBranch
+                OAuthToken: !Ref GitHubToken
+                PollForSourceChanges: false
+              OutputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
+
+        - Name: Deploy
+          Actions:
+            - Name: Deploy
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: S3
+              Configuration:
+                BucketName: !Ref B1WP
+                Extract: true
+              InputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
+
+  # PipeLineWebhookS3:
+  #   Type: 'AWS::CodePipeline::Webhook'
+  #   Properties: 
+  #     Authentication: GITHUB_HMAC
+  #     AuthenticationConfiguration: 
+  #       SecretToken: !Ref GitHubToken
+  #     Filters: 
+  #       - JsonPath: '$.ref'
+  #         MatchEquals: 'refs/heads/{Branch}'
+  #     Name: PipeLineWebhookS3
+  #     RegisterWithThirdParty: True
+  #     TargetAction: Source
+  #     TargetPipeline: !Ref PipelineS3
+  #     TargetPipelineVersion: !GetAtt PipelineS3.Version
+
+  ArtifactS3:
+    Type: "AWS::S3::Bucket"
+
+  B1WP:
+    Type: 'AWS::S3::Bucket'

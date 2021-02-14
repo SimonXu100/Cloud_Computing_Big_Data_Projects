@@ -1,0 +1,28 @@
+body {
+	background-image: url("../img/background.svg"); 
+	background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    height: 100vh;
+    padding: 150px 0;
+}
+
+.submit-form {
+	width: 50%;
+    height: 450px;
+    max-width: 600px;
+    background: #0000004d;;
+    padding: 50px !important;;
+    text-align: center;
+    margin: auto;
+    border-radius: 5px;
+    color: #ffffffe0;
+}
+
+.form-group {
+	margin: 50px 0 !important;
+}
+
+.form-group input {
+    margin: 10px 0 !important;
+}
