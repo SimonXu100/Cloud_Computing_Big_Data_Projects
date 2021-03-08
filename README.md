@@ -6,7 +6,7 @@ Demo Link: https://hw1-chatbot.s3.amazonaws.com/index.html
 
 Example Iteration:
 
-xample Interaction
+example Interaction:
 
 User: Hello
 
