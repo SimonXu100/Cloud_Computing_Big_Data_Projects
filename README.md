@@ -2,15 +2,13 @@
 
 ## Lab1: Dining Concierge Agent
 ### Description
-- Implemented a chat user interface and host the front end in AWS S3
-- Built a Dining Concierge chatbot using Amazon Lex and integrated Lex chatbot into chat API based on API Gateway
-Defined chat and recommendation operation using Lambda function and managed chat information in Amazon SQS
-- Used the Yelp API to collect 10,000+ restaurants information from Manhattan and deployed those data on Amazon
-DynamoDB, combining Elasticsearch service to optimize searching mechanism
-- Built suggestion mode by analyzing chat information and Database statistics information, broadcasting recommend
-restaurants and cuisines by SNS services. And set up a CloudWatch event trigger to automate request processing
+- Implement and host a chat user interface on AWS S3, integrating a resful chat APIs built from swagger specification on AWS API Gateway. 
 
+- Train and deploy the Lex chatbot for the purpose of dining concierge agent, extracting and then pushing customer's perferred information into SQS queue.
 
+- Deploy detailed restaurants' information collected from Yelp API on Amazon DynamoDB, combining with Elasticsearch service to optimize searching mechanism.
+
+- Built suggestion mode(Lambda) asychronously operating SQS message queue, retrieving recommended restaurants and cuisines and notifying customers by SNS services. And set up a CloudWatch event trigger to automate the request processing.
 
 
 
