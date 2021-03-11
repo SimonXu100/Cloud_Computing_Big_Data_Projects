@@ -129,7 +129,6 @@ Demo Link: https://hw3-wp.s3.amazonaws.com/index.html
 
 ## Lab4: Intelligent System On Cloud
 ### Description
-Demo Link:  
 
 
 ### Architecture:
