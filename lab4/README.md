@@ -9,4 +9,4 @@
 
 
 ### Architecture:
-![alt text](architecture/lab4.png)
+![alt text](../architecture/lab4.png)
